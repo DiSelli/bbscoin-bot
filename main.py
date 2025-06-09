@@ -7,7 +7,7 @@ if creds_b64:
     with open("creds.json", "wb") as f:
         f.write(base64.b64decode(creds_b64))
 
-# BBS Telegram Bot - Full System with Admin Tools & Auto Refunds
+# BBS Telegram Bot - Full System with Admin Tools & Google Sheets
 
 import logging
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
@@ -24,8 +24,9 @@ logger = logging.getLogger(__name__)
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 creds = ServiceAccountCredentials.from_json_keyfile_name("creds.json", scope)
 client = gspread.authorize(creds)
-sheet = client.open("BBS_UserData").sheet1
-match_sheet = client.open("BBS_Matches").sheet1
+spreadsheet = client.open("BBS_Data")
+sheet = spreadsheet.worksheet("BBS_UserData")
+match_sheet = spreadsheet.worksheet("BBS_Matches")
 
 # States
 REGISTER_PHONE, MAIN_MENU = range(2)
@@ -116,12 +117,10 @@ async def mark_result(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"Result set for match {match_id}: {result}")
 
         if result == "❌":
-            purchases = []  # Implement user-match tracking in extended version
             users = sheet.get_all_records()
             for i, user in enumerate(users):
-                # Simulated: refund 20% to all users (actual logic needs match-user tracking)
                 balance = int(user['balance'])
-                refund = int(0.2 * 60)  # 60 assumed investment
+                refund = int(0.2 * 60)  # 20% of 60 BBSCoin, adjust as needed
                 sheet.update_cell(i+2, 3, balance + refund)
             await update.message.reply_text("💸 Refunds processed.")
     except Exception as e:
